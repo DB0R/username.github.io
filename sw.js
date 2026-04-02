@@ -1,4 +1,4 @@
-const CACHE_NAME = 'km-mohy-v1';
+const CACHE_NAME = 'km-mohy-v2';
 const ASSETS = [
   'app.html',
   'script.js',
