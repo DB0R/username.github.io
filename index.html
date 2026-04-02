@@ -4,20 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>جدول النظام الغذائي</title>
-    <link rel="manifest" href="manifest.json">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        /* --- التنسيقات الأساسية --- */
         body {
-            font-family: 'Cairo', 'Tajawal', sans-serif;
+            font-family: 'Cairo', sans-serif;
             background-color: #f4f7f6;
             color: #333;
             margin: 0;
             padding: 20px;
             line-height: 1.6;
-            transition: background-color 0.3s, color 0.3s;
         }
         .container {
             max-width: 1200px;
@@ -72,52 +69,6 @@
         .save-button:hover {
             background-color: #27ae60;
         }
-
-        /* --- 🎨 السمات اللونية (Themes) 🎨 --- */
-        /* الأزرق الافتراضي */
-        body.default-light { --accent: #3498db; }
-        /* نسيم المحيط */
-        body.ocean-blue { --accent: #0077b6; background-color: #eef7ff; }
-        body.ocean-blue .day-header { border-bottom-color: #0077b6; }
-        /* هدوء الغابة */
-        body.forest-green { --accent: #2d6a4f; background-color: #f0fff4; }
-        body.forest-green .day-header { border-bottom-color: #2d6a4f; }
-        /* اللمسة الملكية */
-        body.royal-gold { --accent: #c5a773; background-color: #fffaf0; }
-        body.royal-gold .day-header { border-bottom-color: #c5a773; }
-        /* الاحترافي */
-        body.professional-gray { --accent: #495057; background-color: #f8f9fa; }
-        body.professional-gray .day-header { border-bottom-color: #495057; }
-        /* غروب الشمس */
-        body.sunset-orange { --accent: #f28c18; background-color: #fff7ed; }
-        body.sunset-orange .day-header { border-bottom-color: #f28c18; }
-        /* ملكي */
-        body.royal-purple { --accent: #8b5cf6; background-color: #f5f3ff; }
-        body.royal-purple .day-header { border-bottom-color: #8b5cf6; }
-
-        /* --- 🌙 الوضع الليلي (Dark Mode) 🌙 --- */
-        body.dark-theme { background-color: #121212 !important; color: #e0e0e0 !important; }
-        body.dark-theme .container { background-color: #1e1e1e; color: #e0e0e0; }
-        body.dark-theme .day-block { background: #2a2a2a; border-color: #444; }
-        body.dark-theme .meal-block { background: #333; border-color: #555; color: #eee; }
-        body.dark-theme h1, body.dark-theme h2, body.dark-theme h3 { color: #fff; }
-        body.dark-theme select, body.dark-theme button:not(.action-button) { background-color: #333; color: #fff; border-color: #555; }
-
-        /* --- 📱 هياكل عرض الموبايل 📱 --- */
-        @media (max-width: 768px) {
-            body.mobile-grid .meals-container { grid-template-columns: 1fr 1fr; gap: 10px; }
-            body.mobile-cards .meal-block { border-left: 4px solid var(--accent, #3498db); box-shadow: none; }
-        }
-
-        /* --- وضع العرض (Viewer Mode) --- */
-        body.viewer-mode #plan-type-selector,
-        body.viewer-mode #nutrition-fields-container,
-        body.viewer-mode .action-buttons button:not(#load-plan-button),
-        body.viewer-mode .day-header-buttons,
-        body.viewer-mode .delete-meal-btn,
-        body.viewer-mode .settings-section { display: none !important; }
-        body.viewer-mode [contenteditable="true"] { pointer-events: none; background: none !important; }
-
         /* --- حاوية الأيام --- */
         #days-container {
             display: flex;
@@ -303,7 +254,6 @@
 
         <!-- أزرار الإضافة والحذف -->
         <div class="action-buttons">
-            <a href="start.html" class="action-button" style="background-color: #34495e; text-decoration: none;">🏠 الرئيسية</a>
             <button class="action-button" id="add-day-button">➕ إضافة يوم</button>
             <button class="action-button" id="load-plan-button" style="background-color: #f39c12;">📂 استعادة خطة</button>
             <button class="action-button save-button" id="save-button">💾 حفظ الخطة</button>
@@ -316,20 +266,10 @@
         </div>
 
         <!-- حقل مخفي لاختيار الملف -->
-        <input type="file" id="plan-file-input" accept=".json" style="display: none;">
+        <input type="file" id="plan-file-input" accept=".html" style="display: none;">
     </div>
 
     <script src="script.js"></script>
-    <script>
-        // تسجيل Service Worker للعمل بدون إنترنت
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(reg => console.log('Service Worker Registered'))
-                    .catch(err => console.log('Service Worker Failed', err));
-            });
-        }
-    </script>
 
     <script>
         // منع النقر بزر الماوس الأيمن

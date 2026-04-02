@@ -1,26 +1,24 @@
 {
-  "short_name": "K/M Mohy",
-  "name": "مصنع العضلات - كابتن محمد محي",
+  "name": "K/M Mohy - Muscle Factory",
+  "short_name": "Muscle Factory",
+  "description": "تطبيق متابعة الجداول الغذائية والتدريبية",
+  "start_url": "app.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3498db",
+  "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "https://i.postimg.cc/mrLC1DL4/Picsart-25-11-15-02-40-50-432.jpg",
+      "src": "https://i.postimg.cc/qBSSTt0g/Picsart-25-11-15-02-41-25-060.jpg",
       "sizes": "192x192",
       "type": "image/jpeg",
       "purpose": "any maskable"
     },
     {
-      "src": "https://i.postimg.cc/mrLC1DL4/Picsart-25-11-15-02-40-50-432.jpg",
+      "src": "https://i.postimg.cc/qBSSTt0g/Picsart-25-11-15-02-41-25-060.jpg",
       "sizes": "512x512",
       "type": "image/jpeg",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
-  ],
-  "start_url": "start.html",
-  "background_color": "#ffffff",
-  "theme_color": "#3498db",
-  "display": "standalone",
-  "scope": "/",
-  "description": "تطبيق إدارة الجداول الغذائية والتدريبية",
-  "dir": "rtl",
-  "lang": "ar"
+  ]
 }

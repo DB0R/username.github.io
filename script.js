@@ -100,33 +100,13 @@ document.addEventListener('DOMContentLoaded', () => {
      * تبديل الوضع بين النهاري والليلي.
      */
     const toggleMode = () => {
-        if (modeToggleButton.dataset.mode === 'dark') {
+        const isDarkMode = modeToggleButton.dataset.mode === 'dark';
+        if (isDarkMode) {
             modeToggleButton.dataset.mode = 'light';
             modeToggleButton.innerHTML = 'نهاري ☀️';
-            document.body.classList.remove('dark-theme');
         } else {
             modeToggleButton.dataset.mode = 'dark';
             modeToggleButton.innerHTML = 'ليلي 🌙';
-            document.body.classList.add('dark-theme');
-        }
-    };
-
-    /**
-     * تحديث فئات الـ Body لتطبيق السمات والتنسيقات.
-     */
-    const updateBodyClasses = () => {
-        const theme = document.getElementById('theme-selector').value;
-        const mobile = document.getElementById('mobile-layout-selector').value;
-        
-        // مسح الفئات القديمة المتعلقة بالثيم والتخطيط
-        document.body.className = document.body.classList.contains('dark-theme') ? 'dark-theme' : '';
-        
-        // إضافة الفئات الجديدة
-        document.body.classList.add(theme);
-        document.body.classList.add(mobile);
-        
-        if (modeToggleButton.dataset.mode === 'dark') {
-            document.body.classList.add('dark-theme');
         }
     };
 
@@ -134,6 +114,8 @@ document.addEventListener('DOMContentLoaded', () => {
      * تحديث واجهة المستخدم بناءً على نوع الخطة المختار.
      */
     const updateUIForPlanType = () => {
+        if (!planTypeSelector) return;
+
         const planType = planTypeSelector.value;
         const mainHeader = document.querySelector('header h1');
         const mainDescription = document.querySelector('header p.description');
@@ -141,13 +123,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const nutritionFieldsContainer = document.getElementById('nutrition-fields-container');
 
         if (planType === 'workout') {
-            mainHeader.textContent = 'جدول النظام التدريبي';
-            mainDescription.textContent = 'قم ببناء خطتك التدريبية بإضافة التمارين لكل يوم.';
+            if (mainHeader) mainHeader.textContent = 'جدول النظام التدريبي';
+            if (mainDescription) mainDescription.textContent = 'قم ببناء خطتك التدريبية بإضافة التمارين لكل يوم.';
             addDayBtn.textContent = '➕ إضافة يوم تدريبي';
             nutritionFieldsContainer.style.display = 'none'; // إخفاء حقول التغذية
         } else { // diet
-            mainHeader.textContent = 'جدول النظام الغذائي';
-            mainDescription.textContent = 'قم ببناء خطتك الغذائية بإضافة الأيام والوجبات بشكل ديناميكي.';
+            if (mainHeader) mainHeader.textContent = 'جدول النظام الغذائي';
+            if (mainDescription) mainDescription.textContent = 'قم ببناء خطتك الغذائية بإضافة الأيام والوجبات بشكل ديناميكي.';
             addDayBtn.textContent = '➕ إضافة يوم';
             nutritionFieldsContainer.style.display = 'block'; // إظهار حقول التغذية
         }
@@ -186,6 +168,8 @@ document.addEventListener('DOMContentLoaded', () => {
  */
     const populateNutritionFields = () => {
         const container = document.getElementById('nutrition-fields-checkboxes');
+        if (!container) return;
+
         container.innerHTML = ''; // مسح المحتوى القديم
 
         // حقول مفعلة بشكل افتراضي
@@ -457,215 +441,280 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     /**
-     * تجميع بيانات الخطة الحالية في كائن JSON.
+     * يحفظ الخطة الحالية كملف HTML للقراءة فقط.
      */
-    const getPlanDataObject = () => {
-        return {
-            type: planTypeSelector.value,
-            theme: document.getElementById('theme-selector').value,
-            mode: modeToggleButton.dataset.mode,
-            signature: document.getElementById('signature-layout-selector').value,
-            mobile: document.getElementById('mobile-layout-selector').value,
-            days: Array.from(document.querySelectorAll('.day-block')).map(dayBlock => ({
-                title: dayBlock.querySelector('h2').textContent,
-                meals: Array.from(dayBlock.querySelectorAll('.meal-block')).map(mealBlock => ({
-                    title: mealBlock.querySelector('h3').textContent,
-                    content: mealBlock.querySelector('.meal-content').textContent,
-                    details: Array.from(mealBlock.querySelectorAll('.meal-details span')).map(span => ({
-                        field: span.dataset.field,
-                        label: span.querySelector('strong').textContent,
-                        value: span.querySelector('[contenteditable]').textContent,
-                        unit: span.textContent.split(' ').pop()
-                    }))
-                }))
-            }))
-        };
-    };
-
-    /**
-     * حفظ البيانات في ذاكرة المتصفح (LocalStorage).
-     */
-    const saveToLocalStorage = () => {
-        const data = getPlanDataObject();
-        // حفظ البيانات بناءً على نوع الخطة لضمان عدم التداخل
-        const storageKey = `muscle_factory_autosave_${data.type}`;
-        localStorage.setItem(storageKey, JSON.stringify(data));
-        localStorage.setItem('muscle_factory_last_type', data.type); // حفظ آخر نوع تم فتحه
-    };
-
-    /**
-     * يحفظ الخطة كملف HTML مستقل للمستهلك (المتدرب).
-     */
-    const savePlanAsHtml = async () => {
-        const fileName = prompt("أدخل اسم ملف الخطة (سيظهر للمتدرب):", "خطة غذائية");
+    const savePlanAsHtml = () => {
+        const fileName = prompt("الرجاء إدخال اسم للملف لحفظ الخطة:", "خطة غذائية");
         if (!fileName || fileName.trim() === "") {
-            alert("تم إلغاء الحفظ.");
+            alert("تم إلغاء الحفظ. لم يتم إدخال اسم للملف.");
             return;
         }
 
-        const planData = getPlanDataObject();
+        // 1. احصل على السمة المختارة من القائمة المنسدلة
+        const selectedTheme = document.getElementById('theme-selector').value;
+        const themeName = document.getElementById('theme-selector').options[document.getElementById('theme-selector').selectedIndex].text;
+        const planType = planTypeSelector.value;
+        const isDarkMode = modeToggleButton.dataset.mode === 'dark';
+        const signatureLayout = document.getElementById('signature-layout-selector').value;
+        const mobileLayout = document.getElementById('mobile-layout-selector').value;
 
-        // تحويل صور التوقيع والبانر لضمان عملها بدون إنترنت
-        const bannerUrl = 'https://i.postimg.cc/mrLC1DL4/Picsart-25-11-15-02-40-50-432.jpg';
-        const bannerBase64 = await imageUrlToBase64(bannerUrl);
+        // 2. استنساخ حاوية الأيام فقط وتنظيفها
+        const daysContainerClone = daysContainer.cloneNode(true);
+        daysContainerClone.querySelectorAll('.delete-day-btn, .add-meal-btn, .delete-meal-btn').forEach(btn => btn.remove());
+        
+        daysContainerClone.querySelectorAll('[contenteditable="true"]').forEach(el => {
+            el.removeAttribute('contenteditable');
+        });
+        daysContainerClone.querySelectorAll('.day-block').forEach(dayBlock => {
+            dayBlock.classList.add('collapsed'); // إضافة حالة الطي الافتراضية
+        });
+        let dietPlanHtml = daysContainerClone.innerHTML;
 
-        const fullHtml = `
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${fileName}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        ${getThemeStyles()}
-        /* إخفاء أدوات التحكم في نسخة المتدرب */
-        .day-header-buttons, .action-buttons, #plan-type-selector, #nutrition-fields-container, .settings-section, .delete-meal-btn {
-            display: none !important;
+        // 3. جلب الصور من الروابط وتحويلها إلى Base64
+        const img1 = 'https://i.postimg.cc/mrLC1DL4/Picsart-25-11-15-02-40-50-432.jpg';
+        const img2 = 'https://i.postimg.cc/qBSSTt0g/Picsart-25-11-15-02-41-25-060.jpg';
+        const img3 = 'https://i.postimg.cc/L8MWJrJf/Picsart-25-11-15-02-42-03-732.jpg';
+
+        // 4. إنشاء قسم التوقيع بناءً على الاختيار
+        let signatureHtml = '';
+        const whatsappButton = `<a href="#" id="whatsapp-share-btn" class="whatsapp-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width="20" height="20"><path fill="currentColor" d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.8 0-65.7-10.8-94.2-30.6l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.8-16.2-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/></svg><span>تواصل عبر واتساب</span></a>`;
+
+        if (signatureLayout === 'professional') {
+            signatureHtml = `<footer class="signature-footer"><div class="signature-images"><img src="${img2}" alt="صورة للكابتن محمد محي 2"><img src="${img3}" alt="صورة للكابتن محمد محي 3"></div><div class="signature-content"><p class="prepared-by">تم إعداد هذا البرنامج بواسطة</p><h3 class="captain-name">K/M mohy</h3><p class="captain-title">خبير التغذية واللياقة البدنية - مصنع العضلات</p>${whatsappButton}</div></footer>`;
+        } else if (signatureLayout === 'classic') {
+            signatureHtml = `<div class="classic-signature"><div class="personal-details"><h2>K/M mohy</h2><h3>مصنع العضلات - Muscle Factory</h3></div><div class="image-gallery" style="grid-template-columns: repeat(2, 1fr);"><div class="gallery-item"><img src="${img2}" alt="صورة 2"></div><div class="gallery-item"><img src="${img3}" alt="صورة 3"></div></div><div class="share-section"><p>للاستفسار أو تعديل الخطة، تواصل معي مباشرة!</p>${whatsappButton}</div></div>`;
+        } else if (signatureLayout === 'modern') {
+            signatureHtml = `<footer class="modern-signature"><div class="modern-images" style="--img-count: 2;"><img src="${img2}" alt="صورة للكابتن محمد محي 2"><img src="${img3}" alt="صورة للكابتن محمد محي 3"></div><div class="modern-content"><h3 class="captain-name">K/M mohy</h3><p class="captain-title">خبير التغذية واللياقة البدنية - مصنع العضلات</p>${whatsappButton}</div></footer>`;
         }
-        [contenteditable="true"] {
-            background-color: transparent !important;
-            border: none !important;
-            outline: none !important;
-        }
-    </style>
-</head>
-<body class="${planData.theme} ${planData.mode === 'dark' ? 'dark-theme' : ''} ${planData.mobile} viewer-mode">
-    <div class="container">
-        <header>
-            <div class="banner-header" style="background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.8)), url('${bannerBase64}');">
-                <h1>${planData.type === 'diet' ? 'جدول النظام الغذائي' : 'جدول النظام التدريبي'}</h1>
-                <p class="description">خطة: ${fileName}</p>
-            </div>
-        </header>
-        <div id="days-container"></div>
-    </div>
 
-    <script>
-        const planData = ${JSON.stringify(planData)};
-        const planId = "plan_" + btoa(unescape(encodeURIComponent("${fileName}")));
-
-        // وظيفة بناء الجدول من البيانات المدمجة
-        function renderViewer() {
-            const container = document.getElementById('days-container');
-            planData.days.forEach((day, dIdx) => {
-                const dayBlock = document.createElement('div');
-                dayBlock.className = 'day-block';
-                dayBlock.innerHTML = \`<div class="day-header"><h2>\${day.title}</h2></div><div class="meals-container"></div>\`;
-                const mealsContainer = dayBlock.querySelector('.meals-container');
-                
-                day.meals.forEach((meal, mIdx) => {
-                    const mealBlock = document.createElement('div');
-                    mealBlock.className = 'meal-block';
-                    let detHtml = meal.details.map((d, i) => {
-                        // استرجاع القيمة من الذاكرة المحلية إذا كانت موجودة (للمتدرب)
-                        const savedVal = localStorage.getItem(\`\${planId}_\${dIdx}_\${mIdx}_\${i}\`) || d.value;
-                        const isEditable = d.label.includes('الوزن') || d.label.includes('العدادات');
-                        return \`<span><strong>\${d.label}</strong> <span class="val" \${isEditable ? 'contenteditable="true"' : ''} data-key="\${planId}_\${dIdx}_\${mIdx}_\${i}">\${savedVal}</span> \${d.unit}</span>\`;
-                    }).join('');
-                    
-                    mealBlock.innerHTML = \`<h3>\${meal.title}</h3><div class="meal-content">\${meal.content}</div><div class="meal-details">\${detHtml}</div>\`;
-                    mealsContainer.appendChild(mealBlock);
-                });
-                container.appendChild(dayBlock);
-            });
-
-            // حفظ التغييرات التي يقوم بها المتدرب (مثل الوزن) تلقائياً
-            document.addEventListener('input', (e) => {
-                if (e.target.classList.contains('val')) {
-                    localStorage.setItem(e.target.dataset.key, e.target.textContent);
+        // 5. إضافة كود الحفظ التلقائي وتفعيل التعديل فقط لخطة التدريب
+        let autoSaveScript = '';
+        if (planType === 'workout') {
+            // تفعيل التعديل لحقول الوزن والعدادات فقط (وليس المجاميع)
+            let fieldCounter = 0;
+            daysContainerClone.querySelectorAll('.meal-details .workout-field').forEach((fieldSpan) => {
+                const label = fieldSpan.querySelector('strong').textContent;
+                if (label.includes('الوزن') || label.includes('العدادات')) {
+                    const editableSpan = fieldSpan.querySelector('span');
+                    editableSpan.setAttribute('contenteditable', 'true');
+                    editableSpan.setAttribute('data-id', `field-${fieldCounter++}`); // إضافة معرف فريد
                 }
             });
-        }
-        renderViewer();
-    </script>
-</body>
-</html>`;
+            dietPlanHtml = daysContainerClone.innerHTML; // <<-- الإصلاح: إعادة تعيين المحتوى بعد التعديل
 
-        const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
+            autoSaveScript = `
+                <script>
+                    const planId = 'workout-plan-storage'; // معرف فريد لهذه الخطة
+                    const editableFields = document.querySelectorAll('[data-id]');
+                    
+                    // تحميل البيانات عند فتح الصفحة
+                    editableFields.forEach(field => {
+                        const savedValue = localStorage.getItem(planId + '-' + field.dataset.id);
+                        if (savedValue) field.textContent = savedValue;
+                    });
+
+                    // حفظ البيانات عند التعديل
+                    document.getElementById('days-container').addEventListener('input', (e) => {
+                        if (e.target.hasAttribute('data-id')) {
+                            localStorage.setItem(planId + '-' + e.target.dataset.id, e.target.textContent);
+                        }
+                    });
+                <\/script>
+            `;
+        }
+
+        // 5.5 إنشاء رأس الصفحة (البانر)
+        const bannerHeaderHtml = `
+            <div class="banner-header" style="background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.8)), url('${img1}');">
+                <h1>${planType === 'diet' ? 'جدول النظام الغذائي' : 'جدول النظام التدريبي'}</h1>
+                <p class="description">خطة "${fileName}"</p>
+            </div>
+        `;
+
+        // 6. تجميع كود HTML الكامل للصفحة الجديدة
+        const fullHtml = `
+            <!DOCTYPE html>
+            <html lang="ar" dir="rtl">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>${fileName.trim()}</title>
+                <link rel="preconnect" href="https://fonts.googleapis.com">
+                <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+                <style>
+                    ${getThemeStyles()}
+                </style>
+            </head>
+            <body class="${selectedTheme} ${isDarkMode ? 'dark-theme' : ''} ${mobileLayout}">
+                <div class="container">
+                    ${bannerHeaderHtml}
+                    <div id="days-container">${dietPlanHtml}</div>
+                    ${signatureHtml}
+                </div>
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // كود تفعيل خاصية الطي والفتح
+                        document.getElementById('days-container').addEventListener('click', function(event) {
+                            const dayHeader = event.target.closest('.day-header');
+                            if (dayHeader && !event.target.closest('a')) {
+                                const dayBlock = dayHeader.closest('.day-block');
+                                if (dayBlock) {
+                                    dayBlock.classList.toggle('collapsed');
+                                }
+                            }
+                        });
+
+                        // كود زر الواتساب
+                        const whatsappBtn = document.getElementById('whatsapp-share-btn');
+                        if (whatsappBtn) {
+                            whatsappBtn.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                const phoneNumber = "201029831669";
+                                const message = "أهلاً كابتن محمد، لدي استفسار بخصوص الخطة.";
+                                const encodedMessage = encodeURIComponent(message);
+                                window.open('https://wa.me/' + phoneNumber + '?text=' + encodedMessage, '_blank');
+                            });
+                        }
+                    });
+                </script>
+                ${autoSaveScript}
+            </body>
+            </html>
+        `;
+
+        // 7. تعمية (تشفير) المحتوى بالكامل لمنع التعديل السهل
+        const encodedHtml = btoa(unescape(encodeURIComponent(fullHtml)));
+
+        // 8. إنشاء ملف HTML الحاضن الذي سيقوم بفك التشفير
+        const obfuscatedHtml = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>${fileName.trim()}</title>
+                <meta charset="UTF-8">
+                <style>body{font-family: sans-serif; text-align: center; padding-top: 50px; background-color: #f0f0f0;}</style>
+            </head>
+            <body>
+                <script>
+                    try {
+                        document.write(decodeURIComponent(escape(atob('${encodedHtml}'))));
+                    } catch (e) {
+                        document.body.innerHTML = '<h1>حدث خطأ أثناء عرض محتوى الصفحة.</h1>';
+                    }
+                <\/script>
+                <noscript>
+                    <h1>يرجى تفعيل الجافاسكريبت لعرض هذه الصفحة.</h1>
+                </noscript>
+            </body>
+            </html>
+        `;
+
+        // 9. إنشاء وتنزيل الملف المعمى (المشفر)
+        const blob = new Blob([obfuscatedHtml], { type: 'text/html;charset=utf-8' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = `${fileName.trim()}.html`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        alert("تم تصدير نسخة المتدرب بنجاح بصيغة HTML.");
+        URL.revokeObjectURL(link.href);
+
+        alert(`تم تجهيز الملف "${fileName.trim()}.html" للتنزيل.`);
     };
 
     /**
-     * بناء الواجهة من كائن البيانات.
-     */
-    const renderPlan = (planData) => {
-        if (!planData) return;
-        planTypeSelector.value = planData.type;
-        document.getElementById('theme-selector').value = planData.theme;
-        document.getElementById('signature-layout-selector').value = planData.signature;
-        document.getElementById('mobile-layout-selector').value = planData.mobile;
-        if (planData.mode === 'dark' && modeToggleButton.dataset.mode !== 'dark') toggleMode();
-        else if (planData.mode === 'light' && modeToggleButton.dataset.mode === 'dark') toggleMode();
-        
-        daysContainer.innerHTML = '';
-        dayCounter = 0;
-        planData.days.forEach(dayData => {
-            const dayBlock = createDayBlock();
-            dayBlock.querySelector('h2').textContent = dayData.title;
-            const mealsContainer = dayBlock.querySelector('.meals-container');
-            dayData.meals.forEach(mealData => {
-                const mealBlock = document.createElement('div');
-                mealBlock.className = 'meal-block';
-                let detHtml = mealData.details.map(d => `<span data-field="${d.field}"><strong>${d.label}</strong> <span contenteditable="true">${d.value}</span> ${d.unit}</span>`).join('');
-                mealBlock.innerHTML = `<button class="delete-meal-btn" title="حذف الوجبة">🗑️</button><h3 contenteditable="true">${mealData.title}</h3><div class="meal-content" contenteditable="true">${mealData.content}</div><div class="meal-details">${detHtml}</div>`;
-                mealsContainer.appendChild(mealBlock);
-            });
-            daysContainer.appendChild(dayBlock);
-        });
-        updateUIForPlanType();
-        updateBodyClasses();
-
-        // إذا كنا في وضع العرض، نجعل كل الحقول غير قابلة للتعديل
-        if (document.body.classList.contains('viewer-mode')) {
-            document.querySelectorAll('[contenteditable]').forEach(el => el.setAttribute('contenteditable', 'false'));
-        }
-    };
-
-    /**
-     * تحميل البيانات تلقائياً.
-     */
-    const loadFromLocalStorage = () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const currentType = urlParams.get('type') || planTypeSelector.value;
-        
-        // البحث عن البيانات الخاصة بهذا النوع تحديداً (diet أو workout)
-        const storageKey = `muscle_factory_autosave_${currentType}`;
-        const saved = localStorage.getItem(storageKey);
-
-        if (saved) {
-            renderPlan(JSON.parse(saved));
-        } else {
-            if (urlParams.get('mode') === 'view') {
-                alert("مرحباً بك! يرجى اختيار ملف الخطة الخاص بك للمرة الأولى، وسيقوم التطبيق بحفظه تلقائياً للمرات القادمة.");
-                planFileInput.click();
-            }
-        }
-    };
-
-    /**
-     * تحميل الخطة من ملف JSON المرفوع.
+     * يقرأ ملف خطة HTML المحفوظ ويعيد تحميله في المحرر.
+     * @param {Event} event - حدث تغيير حقل إدخال الملف.
      */
     const loadPlanFromFile = (event) => {
         const file = event.target.files[0];
-        if (!file) return;
+        if (!file) {
+            return;
+        }
 
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
-                const data = JSON.parse(e.target.result);
-                renderPlan(data);
-                saveToLocalStorage();
-                alert("تم استيراد البيانات بنجاح.");
+                const fileContent = e.target.result;
+
+                // 1. استخراج المحتوى المشفر وفك تشفيره
+                const base64Match = fileContent.match(/atob\('([^']+)'\)/);
+                if (!base64Match || !base64Match[1]) {
+                    throw new Error("الملف غير صالح أو لا يحتوي على محتوى مشفر.");
+                }
+                const decodedHtml = decodeURIComponent(escape(atob(base64Match[1])));
+
+                // 2. إنشاء عنصر DOM مؤقت لتحليل المحتوى
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(decodedHtml, 'text/html');
+
+                // 3. استخراج الإعدادات من الملف المحمل
+                const bodyClasses = doc.body.className.split(' ');
+                const theme = bodyClasses.find(c => c.endsWith('-light') || ['ocean-blue', 'forest-green', 'royal-gold', 'professional-gray', 'sunset-orange', 'royal-purple'].includes(c)) || 'default-light';
+                const isDarkMode = bodyClasses.includes('dark-theme');
+                const planType = doc.querySelector('.banner-header h1').textContent.includes('التدريبي') ? 'workout' : 'diet';
+                const signatureElement = doc.querySelector('footer, .classic-signature');
+                let signatureLayout = 'professional';
+                const mobileLayout = bodyClasses.find(c => c.startsWith('mobile-')) || 'mobile-vertical';
+                if (signatureElement) {
+                    if (signatureElement.classList.contains('classic-signature')) signatureLayout = 'classic';
+                    else if (signatureElement.classList.contains('modern-signature')) signatureLayout = 'modern';
+                }
+
+                // 4. استخراج محتوى الأيام وإعادة بنائه ليكون قابلاً للتعديل
+                const loadedDaysContainer = doc.getElementById('days-container');
+                if (!loadedDaysContainer) {
+                    throw new Error("لم يتم العثور على حاوية الأيام في الملف.");
+                }
+
+                // إعادة تفعيل حقول التعديل وإضافة الأزرار المحذوفة
+                loadedDaysContainer.querySelectorAll('.day-block').forEach(dayBlock => {
+                    dayBlock.querySelector('.day-header h2').setAttribute('contenteditable', 'true');
+                    const addBtnText = planType === 'diet' ? '➕ إضافة وجبة' : '➕ إضافة تمرين';
+                    const dayHeaderButtons = dayBlock.querySelector('.day-header-buttons');
+                    dayHeaderButtons.innerHTML = `
+                        <button class="add-meal-btn">${addBtnText}</button>
+                        <button class="delete-day-btn" title="حذف اليوم">🗑️</button>
+                    `;
+
+                    dayBlock.querySelectorAll('.meal-block').forEach(mealBlock => {
+                        mealBlock.querySelector('h3').setAttribute('contenteditable', 'true');
+                        mealBlock.querySelector('.meal-content').setAttribute('contenteditable', 'true');
+                        mealBlock.querySelectorAll('.meal-details span[contenteditable]').forEach(span => span.setAttribute('contenteditable', 'true'));
+                        
+                        // إضافة زر حذف الوجبة
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.className = 'delete-meal-btn';
+                        deleteBtn.title = 'حذف الوجبة';
+                        deleteBtn.innerHTML = '🗑️';
+                        mealBlock.prepend(deleteBtn);
+                    });
+                });
+
+                // 5. تحديث الصفحة بالمحتوى الجديد
+                daysContainer.innerHTML = loadedDaysContainer.innerHTML;
+                dayCounter = daysContainer.querySelectorAll('.day-block').length;
+
+                // 6. تحديث عناصر التحكم في الواجهة الرئيسية
+                planTypeSelector.value = planType;
+                document.getElementById('theme-selector').value = theme;
+                document.getElementById('signature-layout-selector').value = signatureLayout;
+                document.getElementById('mobile-layout-selector').value = mobileLayout;
+                
+                if ((isDarkMode && modeToggleButton.dataset.mode !== 'dark') || (!isDarkMode && modeToggleButton.dataset.mode === 'dark')) {
+                    toggleMode(); // تبديل الوضع إذا كان مختلفًا
+                }
+                
+                updateUIForPlanType(); // تحديث الواجهة لتطابق نوع الخطة
+
+                alert("تم استعادة الخطة بنجاح وجاهزة للتعديل.");
+
             } catch (error) {
-                alert("خطأ في قراءة ملف JSON.");
+                console.error("فشل في تحميل الخطة:", error);
+                alert(`حدث خطأ أثناء محاولة استعادة الملف. قد يكون الملف غير صالح.\n${error.message}`);
             } finally {
+                // إعادة تعيين حقل الإدخال للسماح بتحميل نفس الملف مرة أخرى
                 event.target.value = '';
             }
         };
@@ -673,20 +722,10 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- التهيئة الأولية للصفحة ---
-    // قراءة نوع الخطة من الرابط إذا وجد
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('mode') === 'view') {
-        document.body.classList.add('viewer-mode');
+    if (planTypeSelector) {
+        populateNutritionFields(); // إنشاء صناديق اختيار الحقول الغذائية
+        updateUIForPlanType(); // تحديث الواجهة بناءً على الاختيار الافتراضي
     }
-
-    const typeParam = urlParams.get('type');
-    if (typeParam && (typeParam === 'diet' || typeParam === 'workout')) {
-        planTypeSelector.value = typeParam;
-    }
-
-    populateNutritionFields(); // إنشاء صناديق اختيار الحقول الغذائية
-    updateUIForPlanType(); // تحديث الواجهة بناءً على الاختيار الافتراضي
-    loadFromLocalStorage(); // تحميل البيانات المحفوظة تلقائياً
 
     // ربط الأحداث بالأزرار الرئيسية
     if (addDayButton) {
@@ -694,7 +733,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (deleteAllButton) {
         deleteAllButton.addEventListener('click', deleteAllDays);
-        deleteAllButton.addEventListener('click', () => localStorage.removeItem('muscle_factory_autosave'));
     }
     if (saveButton) {
         saveButton.addEventListener('click', savePlanAsHtml);
@@ -709,27 +747,8 @@ document.addEventListener('DOMContentLoaded', () => {
         modeToggleButton.addEventListener('click', toggleMode);
     }
     if (planTypeSelector) {
-        planTypeSelector.addEventListener('change', () => {
-            updateUIForPlanType();
-            saveToLocalStorage();
-        });
+        planTypeSelector.addEventListener('change', updateUIForPlanType);
     }
-
-    // مراقبة تغييرات الإعدادات الأخرى للحفظ التلقائي
-    ['theme-selector', 'signature-layout-selector', 'mobile-layout-selector'].forEach(id => {
-        document.getElementById(id).addEventListener('change', () => {
-            updateBodyClasses();
-            saveToLocalStorage();
-        });
-    });
-    modeToggleButton.addEventListener('click', () => {
-        saveToLocalStorage();
-    });
-
-    /**
-     * حفظ تلقائي عند أي إدخال نصوص (Typing)
-     */
-    daysContainer.addEventListener('input', saveToLocalStorage);
 
     /**
      * استخدام تفويض الأحداث للتعامل مع الأزرار الديناميكية (إضافة وجبة، حذف وجبة، حذف يوم).
@@ -744,7 +763,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const mealsContainer = target.closest('.day-block').querySelector('.meals-container');
                 if (mealsContainer) {
                     mealsContainer.appendChild(createMealBlock());
-                    saveToLocalStorage();
                 }
             }
 
@@ -753,7 +771,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const dayBlock = target.closest('.day-block');
                 if (dayBlock && confirm('هل أنت متأكد من حذف هذا اليوم بالكامل؟')) {
                     dayBlock.remove();
-                    saveToLocalStorage();
                     // ملاحظة: لا نعيد ترتيب أرقام الأيام الأخرى للحفاظ على البساطة
                 }
             }
@@ -766,8 +783,95 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (mealBlock) {
                     // لا نطلب تأكيدًا لحذف وجبة واحدة لسرعة الاستخدام
                     mealBlock.remove();
-                    saveToLocalStorage();
                 }
+            }
+        });
+    }
+
+    // --- منطق تطبيق الـ PWA (خاص بصفحة app.html) ---
+    const pwaAddBtn = document.getElementById('add-plan-pwa-btn');
+    const pwaInput = document.getElementById('pwa-file-input');
+    const pwaContentArea = document.getElementById('pwa-content-area');
+    const initialSetup = document.getElementById('initial-setup');
+
+    if (pwaAddBtn) {
+        // وظيفة فك تشفير وعرض الخطة
+        const renderSavedPlan = (fileContent) => {
+            try {
+                const base64Match = fileContent.match(/atob\('([^']+)'\)/);
+                if (!base64Match) return false;
+
+                const decodedHtml = decodeURIComponent(escape(atob(base64Match[1])));
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(decodedHtml, 'text/html');
+                
+                // استخراج المحتوى والأنماط
+                const container = doc.querySelector('.container');
+                const styles = doc.querySelector('style');
+
+                if (container && styles) {
+                    document.head.appendChild(styles.cloneNode(true));
+                    pwaContentArea.innerHTML = container.outerHTML;
+                    
+                    // إضافة زر إعادة التعيين في الأسفل
+                    const resetBtn = document.createElement('button');
+                    resetBtn.id = 'reset-plan-btn';
+                    resetBtn.textContent = '🔄 تغيير الخطة الحالية';
+                    pwaContentArea.appendChild(resetBtn);
+
+                    initialSetup.style.display = 'none';
+                    pwaContentArea.style.display = 'block';
+                    
+                    // تفعيل ميزة الطي والفتح داخل التطبيق
+                    pwaContentArea.addEventListener('click', (e) => {
+                        const header = e.target.closest('.day-header');
+                        if (header) header.closest('.day-block').classList.toggle('collapsed');
+                        
+                        if (e.target.id === 'reset-plan-btn') {
+                            if (confirm('هل تريد حذف الخطة الحالية واختيار ملف آخر؟')) {
+                                localStorage.removeItem('km_saved_pwa_file');
+                                location.reload();
+                            }
+                        }
+                    });
+                    return true;
+                }
+            } catch (err) {
+                console.error("خطأ في معالجة الملف:", err);
+            }
+            return false;
+        };
+
+        // 1. التحقق من وجود خطة محفوظة مسبقاً
+        const savedFile = localStorage.getItem('km_saved_pwa_file');
+        if (savedFile) {
+            renderSavedPlan(savedFile);
+        }
+
+        // 2. زر إضافة خطة جديدة
+        pwaAddBtn.addEventListener('click', () => pwaInput.click());
+
+        pwaInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const content = event.target.result;
+                    if (renderSavedPlan(content)) {
+                        localStorage.setItem('km_saved_pwa_file', content);
+                        alert('تم حفظ الخطة في التطبيق بنجاح!');
+                    } else {
+                        alert('الملف غير صحيح. يرجى اختيار ملف HTML ناتج عن المحرر.');
+                    }
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        // تفعيل أزرار الواتساب داخل التطبيق إذا وجدت
+        pwaContentArea.addEventListener('click', (e) => {
+            if (e.target.closest('.whatsapp-button')) {
+                window.open('https://wa.me/201029831669?text=' + encodeURIComponent('أهلاً كابتن محمد، لدي استفسار بخصوص الخطة.'), '_blank');
             }
         });
     }

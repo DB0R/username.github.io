@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>متابعة الخطة - Muscle Factory</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#3498db">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Cairo', sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; min-height: 100vh; display: flex; justify-content: center; align-items: center; }
+        .pwa-container { width: 100%; max-width: 1200px; padding: 20px; box-sizing: border-box; text-align: center; }
+        #add-plan-pwa-btn {
+            background-color: #3498db; color: white; border: none; padding: 20px 40px; border-radius: 12px;
+            font-size: 1.8em; font-family: 'Cairo', sans-serif; cursor: pointer; box-shadow: 0 10px 20px rgba(52, 152, 219, 0.3);
+            transition: transform 0.2s;
+        }
+        #add-plan-pwa-btn:active { transform: scale(0.95); }
+        #pwa-content-area { display: none; width: 100%; }
+        .hidden { display: none !important; }
+        /* زر إعادة التعيين يظهر في أسفل الخطة */
+        #reset-plan-btn { margin: 40px auto; display: block; background-color: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-family: 'Cairo'; }
+    </style>
+</head>
+<body>
+
+    <div class="pwa-container">
+        <!-- زر الإضافة الأولي -->
+        <div id="initial-setup">
+            <button id="add-plan-pwa-btn">➕ إضافة خطة</button>
+            <p style="color: #7f8c8d; margin-top: 15px;">قم برفع ملف الخطة الذي قمت بحفظه من المحرر</p>
+        </div>
+
+        <!-- حقل رفع الملف المخفي -->
+        <input type="file" id="pwa-file-input" accept=".html" style="display: none;">
+
+        <!-- منطقة عرض الخطة -->
+        <div id="pwa-content-area"></div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
+</body>
+</html>
