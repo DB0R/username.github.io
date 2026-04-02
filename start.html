@@ -50,6 +50,15 @@
             margin-top: 20px;
             display: none; /* يظهر فقط عبر جافاسكريبت */
         }
+        .ios-guide {
+            display: none;
+            background: rgba(52, 152, 219, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-size: 0.9em;
+            border: 1px dashed #3498db;
+        }
         .btn:hover { transform: translateY(-3px); filter: brightness(1.1); }
     </style>
 </head>
@@ -57,12 +66,15 @@
     <div class="welcome-card">
         <img src="https://i.postimg.cc/mrLC1DL4/Picsart-25-11-15-02-40-50-432.jpg" style="width: 100px; border-radius: 50%; margin-bottom: 20px; border: 3px solid #3498db;">
         <h1>مصنع العضلات</h1>
-        <p>مرحباً بك كابتن! اختر النظام الذي تريد إدارته أو قم بتثبيت التطبيق على جهازك للعمل بدون إنترنت.</p>
+        <p>مرحباً بك! قم بتثبيت التطبيق أولاً، ثم اختر النظام وارفع ملف الخطة الخاص بك.</p>
         
         <div class="choice-buttons">
-            <a href="index.html?type=diet" class="btn diet-btn">🍏 إدارة النظام الغذائي</a>
-            <a href="index.html?type=workout" class="btn workout-btn">💪 إدارة النظام التدريبي</a>
-            <button id="installApp" class="btn install-btn">📲 تثبيت التطبيق على الجهاز</button>
+            <a href="index.html?mode=view&type=diet" class="btn diet-btn">🍏 عرض النظام الغذائي</a>
+            <a href="index.html?mode=view&type=workout" class="btn workout-btn">💪 عرض النظام التدريبي</a>
+            <button id="installApp" class="btn install-btn">✨ تثبيت التطبيق الآن</button>
+            <div id="iosGuide" class="ios-guide">
+                📢 مستخدم آيفون؟ اضغط على زر <strong>المشاركة (Share)</strong> ثم اختر <strong>"إضافة إلى الشاشة الرئيسية" (Add to Home Screen)</strong>.
+            </div>
         </div>
     </div>
 
@@ -75,11 +87,25 @@
         // منطق تثبيت التطبيق (PWA)
         let deferredPrompt;
         const installBtn = document.getElementById('installApp');
+        const iosGuide = document.getElementById('iosGuide');
+
+        // التحقق من الأيفون
+        const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        if (isIos && !window.navigator.standalone) {
+            iosGuide.style.display = 'block';
+        }
 
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
             installBtn.style.display = 'block';
+            
+            // محاولة إظهار طلب التثبيت تلقائياً بعد ثانيتين (للأندرويد والكمبيوتر)
+            setTimeout(() => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                }
+            }, 2000);
         });
 
         installBtn.addEventListener('click', async () => {

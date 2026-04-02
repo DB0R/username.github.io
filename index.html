@@ -109,6 +109,15 @@
             body.mobile-cards .meal-block { border-left: 4px solid var(--accent, #3498db); box-shadow: none; }
         }
 
+        /* --- وضع العرض (Viewer Mode) --- */
+        body.viewer-mode #plan-type-selector,
+        body.viewer-mode #nutrition-fields-container,
+        body.viewer-mode .action-buttons button:not(#load-plan-button),
+        body.viewer-mode .day-header-buttons,
+        body.viewer-mode .delete-meal-btn,
+        body.viewer-mode .settings-section { display: none !important; }
+        body.viewer-mode [contenteditable="true"] { pointer-events: none; background: none !important; }
+
         /* --- حاوية الأيام --- */
         #days-container {
             display: flex;

@@ -539,6 +539,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         updateUIForPlanType();
         updateBodyClasses();
+
+        // إذا كنا في وضع العرض، نجعل كل الحقول غير قابلة للتعديل
+        if (document.body.classList.contains('viewer-mode')) {
+            document.querySelectorAll('[contenteditable]').forEach(el => el.setAttribute('contenteditable', 'false'));
+        }
     };
 
     /**
@@ -549,12 +554,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (saved) {
             renderPlan(JSON.parse(saved));
         } else {
-            // إذا لم تكن هناك بيانات، اطلب من المستخدم رفع ملف
-            setTimeout(() => {
-                if (confirm("مرحباً بك! هل تريد تحميل ملف بيانات موجود مسبقاً؟")) {
-                    planFileInput.click();
-                }
-            }, 1000);
+            // إذا كان في وضع العرض ولا توجد بيانات، نفتح نافذة رفع الملف إجبارياً
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('mode') === 'view') {
+                alert("برجاء اختيار ملف الخطة (قاعدة البيانات) المرسل إليك لعرض النظام.");
+                planFileInput.click();
+            }
         }
     };
 
@@ -584,6 +589,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- التهيئة الأولية للصفحة ---
     // قراءة نوع الخطة من الرابط إذا وجد
     const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('mode') === 'view') {
+        document.body.classList.add('viewer-mode');
+    }
+
     const typeParam = urlParams.get('type');
     if (typeParam && (typeParam === 'diet' || typeParam === 'workout')) {
         planTypeSelector.value = typeParam;
