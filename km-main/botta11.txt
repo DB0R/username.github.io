@@ -1,0 +1,5 @@
+username=admin
+password=12345
+captainName=K/M mohy
+captainTitle=خبير التغذية واللياقة البدنية - مصنع العضلات
+whatsappNumber=201029831669

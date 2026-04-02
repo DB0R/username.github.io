@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>جدول النظام الغذائي</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- التنسيقات الأساسية --- */
+        body {
+            font-family: 'Cairo', 'Tajawal', sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        p.description {
+            color: #7f8c8d;
+            font-size: 1.1em;
+        }
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .action-button {
+            background-color: #3498db;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            font-family: 'Cairo', sans-serif;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .action-button:hover {
+            background-color: #2980b9;
+        }
+        .delete-button {
+            background-color: #e74c3c;
+        }
+        .delete-button:hover {
+            background-color: #c0392b;
+        }
+        .save-button {
+            background-color: #2ecc71;
+        }
+        .save-button:hover {
+            background-color: #27ae60;
+        }
+
+        /* --- 🎨 السمات اللونية (Themes) 🎨 --- */
+        /* الأزرق الافتراضي */
+        body.default-light { --accent: #3498db; }
+        /* نسيم المحيط */
+        body.ocean-blue { --accent: #0077b6; background-color: #eef7ff; }
+        body.ocean-blue .day-header { border-bottom-color: #0077b6; }
+        /* هدوء الغابة */
+        body.forest-green { --accent: #2d6a4f; background-color: #f0fff4; }
+        body.forest-green .day-header { border-bottom-color: #2d6a4f; }
+        /* اللمسة الملكية */
+        body.royal-gold { --accent: #c5a773; background-color: #fffaf0; }
+        body.royal-gold .day-header { border-bottom-color: #c5a773; }
+        /* الاحترافي */
+        body.professional-gray { --accent: #495057; background-color: #f8f9fa; }
+        body.professional-gray .day-header { border-bottom-color: #495057; }
+        /* غروب الشمس */
+        body.sunset-orange { --accent: #f28c18; background-color: #fff7ed; }
+        body.sunset-orange .day-header { border-bottom-color: #f28c18; }
+        /* ملكي */
+        body.royal-purple { --accent: #8b5cf6; background-color: #f5f3ff; }
+        body.royal-purple .day-header { border-bottom-color: #8b5cf6; }
+
+        /* --- 🌙 الوضع الليلي (Dark Mode) 🌙 --- */
+        body.dark-theme { background-color: #121212 !important; color: #e0e0e0 !important; }
+        body.dark-theme .container { background-color: #1e1e1e; color: #e0e0e0; }
+        body.dark-theme .day-block { background: #2a2a2a; border-color: #444; }
+        body.dark-theme .meal-block { background: #333; border-color: #555; color: #eee; }
+        body.dark-theme h1, body.dark-theme h2, body.dark-theme h3 { color: #fff; }
+        body.dark-theme select, body.dark-theme button:not(.action-button) { background-color: #333; color: #fff; border-color: #555; }
+
+        /* --- 📱 هياكل عرض الموبايل 📱 --- */
+        @media (max-width: 768px) {
+            body.mobile-grid .meals-container { grid-template-columns: 1fr 1fr; gap: 10px; }
+            body.mobile-cards .meal-block { border-left: 4px solid var(--accent, #3498db); box-shadow: none; }
+        }
+
+        /* --- حاوية الأيام --- */
+        #days-container {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+        /* --- تصميم قسم اليوم --- */
+        .day-block {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .day-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .day-header h2 {
+            margin: 0;
+            font-size: 1.8em;
+            color: #2c3e50;
+            flex-grow: 1; /* للسماح للعنوان بأخذ المساحة المتاحة */
+            cursor: text;
+        }
+        .day-header-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .day-header-buttons button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.5em;
+            padding: 5px;
+            line-height: 1;
+            border-radius: 5px;
+            transition: background-color 0.2s;
+        }
+        .day-header-buttons button:hover {
+            background-color: #f0f0f0;
+        }
+        .add-meal-btn {
+            font-size: 1em !important;
+            background-color: #2ecc71 !important;
+            color: white;
+            padding: 8px 12px !important;
+        }
+        .add-meal-btn:hover {
+            background-color: #27ae60 !important;
+        }
+
+        /* --- تصميم قسم الوجبة --- */
+        .meals-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+        }
+        .meal-block {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            position: relative;
+        }
+        .meal-block h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.2em;
+            color: #34495e;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            cursor: text;
+        }
+        .meal-block .meal-content {
+            cursor: text;
+            min-height: 40px;
+            margin-bottom: 10px;
+        }
+        .meal-details {
+            font-size: 0.9em;
+            color: #555;
+        }
+        .meal-details span {
+            display: block;
+            margin-top: 5px;
+        }
+        .meal-details span[contenteditable="true"] {
+            display: inline-block;
+            min-width: 40px;
+            padding: 2px 5px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            cursor: text;
+        }
+        .delete-meal-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: none;
+            border: none;
+            font-size: 1.2em;
+            color: #e74c3c;
+            cursor: pointer;
+            padding: 0;
+            opacity: 0.5;
+            transition: opacity 0.2s;
+        }
+        .meal-block:hover .delete-meal-btn {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="diet-plan-container">
+        <header>
+            <h1>جدول النظام الغذائي</h1>
+            <p class="description">قم ببناء خطتك الغذائية بإضافة الأيام والوجبات بشكل ديناميكي.</p>
+        </header>
+
+        <!-- اختيار نوع الخطة -->
+        <div style="text-align: center; margin-bottom: 25px; border-bottom: 1px solid #eee; padding-bottom: 25px;">
+            <label for="plan-type-selector" style="font-size: 1.2em; color: #16a085; display: block; margin-bottom: 10px;">📋 اختر نوع الخطة:</label>
+            <select id="plan-type-selector" style="font-family: 'Cairo', sans-serif; font-size: 1.1em; padding: 10px; border-radius: 5px; border: 1px solid #16a085; min-width: 300px; cursor: pointer; background-color: white; font-weight: bold;">
+                <option value="diet">نظام غذائي</option>
+                <option value="workout">نظام تدريبي</option>
+            </select>
+        </div>
+
+        <!-- قسم اختيار الحقول الغذائية (يظهر فقط للنظام الغذائي) -->
+        <div id="nutrition-fields-container" style="text-align: center; margin-bottom: 25px; border-bottom: 1px solid #eee; padding-bottom: 25px; display: none;">
+            <label style="font-size: 1.2em; color: #16a085; display: block; margin-bottom: 15px;">🥑 اختر الحقول الغذائية للوجبات:</label>
+            <div id="nutrition-fields-checkboxes" style="display: flex; justify-content: center; flex-wrap: wrap; gap: 15px;">
+                <!-- سيتم ملء صناديق الاختيار هنا عبر جافاسكريبت -->
+            </div>
+        </div>
+
+        <!-- قسم الإعدادات -->
+        <div style="display: flex; justify-content: center; align-items: center; gap: 20px; margin-bottom: 25px; flex-wrap: wrap;">
+            <!-- اختيار السمة -->
+            <div>
+                <label for="theme-selector" style="font-size: 1.2em; color: #2c3e50; display: block; margin-bottom: 10px;">🎨 اختر لون التصميم:</label>
+                <select id="theme-selector" style="font-family: 'Cairo', sans-serif; font-size: 1.1em; padding: 10px; border-radius: 5px; border: 1px solid #ddd; min-width: 250px; cursor: pointer; background-color: white;">
+                    <option value="default-light">الافتراضي (أزرق)</option>
+                    <option value="ocean-blue">نسيم المحيط (أزرق)</option>
+                    <option value="forest-green">هدوء الغابة (أخضر)</option>
+                    <option value="royal-gold">اللمسة الملكية (ذهبي)</option>
+                    <option value="professional-gray">الاحترافي (رمادي)</option>
+                    <option value="sunset-orange">غروب الشمس (برتقالي)</option>
+                    <option value="royal-purple">ملكي (بنفسجي)</option>
+                </select>
+            </div>
+            <!-- زر تبديل الوضع -->
+            <div>
+                <label style="font-size: 1.2em; color: #2c3e50; display: block; margin-bottom: 10px;">☀️ اختر الوضع:</label>
+                <button id="mode-toggle-btn" title="تبديل الوضع" style="font-family: 'Cairo', sans-serif; font-size: 1.1em; padding: 10px 20px; border-radius: 5px; border: 1px solid #ddd; cursor: pointer; background-color: white;">نهاري ☀️</button>
+            </div>
+        </div>
+
+        <!-- اختيار تصميم التوقيع -->
+        <div style="text-align: center; margin-bottom: 25px;">
+            <label for="signature-layout-selector" style="font-size: 1.2em; color: #2c3e50; display: block; margin-bottom: 10px;">✍️ اختر تصميم التوقيع:</label>
+            <select id="signature-layout-selector" style="font-family: 'Cairo', sans-serif; font-size: 1.1em; padding: 10px; border-radius: 5px; border: 1px solid #ddd; min-width: 250px; cursor: pointer; background-color: white;">
+                <option value="professional">التصميم الاحترافي (دائري)</option>
+                <option value="classic">التصميم الكلاسيكي (مربع)</option>
+                <option value="modern">التصميم الحديث (بطاقة)</option>
+            </select>
+        </div>
+
+        <!-- اختيار تصميم الموبايل -->
+        <div style="text-align: center; margin-bottom: 25px;">
+            <label for="mobile-layout-selector" style="font-size: 1.2em; color: #2c3e50; display: block; margin-bottom: 10px;">📱 اختر هيكل عرض الموبايل:</label>
+            <select id="mobile-layout-selector" style="font-family: 'Cairo', sans-serif; font-size: 1.1em; padding: 10px; border-radius: 5px; border: 1px solid #ddd; min-width: 250px; cursor: pointer; background-color: white;">
+                <option value="mobile-vertical">القائمة العمودية (افتراضي)</option>
+                <option value="mobile-grid">شبكة مدمجة (عمودين)</option>
+                <option value="mobile-cards">بطاقات مبسطة</option>
+            </select>
+        </div>
+
+        <!-- أزرار الإضافة والحذف -->
+        <div class="action-buttons">
+            <a href="start.html" class="action-button" style="background-color: #34495e; text-decoration: none;">🏠 الرئيسية</a>
+            <button class="action-button" id="add-day-button">➕ إضافة يوم</button>
+            <button class="action-button" id="load-plan-button" style="background-color: #f39c12;">📂 استعادة خطة</button>
+            <button class="action-button save-button" id="save-button">💾 حفظ الخطة</button>
+            <button class="action-button delete-button" id="delete-all-button">🗑️ حذف الكل</button>
+        </div>
+
+        <!-- حاوية الأيام الديناميكية -->
+        <div id="days-container">
+            <!-- سيتم إضافة أقسام الأيام هنا عبر جافاسكريبت -->
+        </div>
+
+        <!-- حقل مخفي لاختيار الملف -->
+        <input type="file" id="plan-file-input" accept=".json" style="display: none;">
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // تسجيل Service Worker للعمل بدون إنترنت
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('Service Worker Registered'))
+                    .catch(err => console.log('Service Worker Failed', err));
+            });
+        }
+    </script>
+
+    <script>
+        // منع النقر بزر الماوس الأيمن
+        document.addEventListener('contextmenu', event => event.preventDefault());
+    </script>
+    
+</body>
+</html>
