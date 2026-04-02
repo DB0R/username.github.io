@@ -487,27 +487,109 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     const saveToLocalStorage = () => {
         const data = getPlanDataObject();
-        localStorage.setItem('muscle_factory_autosave', JSON.stringify(data));
+        // حفظ البيانات بناءً على نوع الخطة لضمان عدم التداخل
+        const storageKey = `muscle_factory_autosave_${data.type}`;
+        localStorage.setItem(storageKey, JSON.stringify(data));
+        localStorage.setItem('muscle_factory_last_type', data.type); // حفظ آخر نوع تم فتحه
     };
 
     /**
-     * يحفظ البيانات يدوياً في ملف JSON.
+     * يحفظ الخطة كملف HTML مستقل للمستهلك (المتدرب).
      */
-    const savePlanAsData = () => {
-        const fileName = prompt("أدخل اسم ملف قاعدة البيانات:", "data-plan");
+    const savePlanAsHtml = async () => {
+        const fileName = prompt("أدخل اسم ملف الخطة (سيظهر للمتدرب):", "خطة غذائية");
         if (!fileName || fileName.trim() === "") {
             alert("تم إلغاء الحفظ.");
             return;
         }
 
         const planData = getPlanDataObject();
-        const blob = new Blob([JSON.stringify(planData, null, 2)], { type: 'application/json' });
+
+        // تحويل صور التوقيع والبانر لضمان عملها بدون إنترنت
+        const bannerUrl = 'https://i.postimg.cc/mrLC1DL4/Picsart-25-11-15-02-40-50-432.jpg';
+        const bannerBase64 = await imageUrlToBase64(bannerUrl);
+
+        const fullHtml = `
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${fileName}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        ${getThemeStyles()}
+        /* إخفاء أدوات التحكم في نسخة المتدرب */
+        .day-header-buttons, .action-buttons, #plan-type-selector, #nutrition-fields-container, .settings-section, .delete-meal-btn {
+            display: none !important;
+        }
+        [contenteditable="true"] {
+            background-color: transparent !important;
+            border: none !important;
+            outline: none !important;
+        }
+    </style>
+</head>
+<body class="${planData.theme} ${planData.mode === 'dark' ? 'dark-theme' : ''} ${planData.mobile} viewer-mode">
+    <div class="container">
+        <header>
+            <div class="banner-header" style="background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.8)), url('${bannerBase64}');">
+                <h1>${planData.type === 'diet' ? 'جدول النظام الغذائي' : 'جدول النظام التدريبي'}</h1>
+                <p class="description">خطة: ${fileName}</p>
+            </div>
+        </header>
+        <div id="days-container"></div>
+    </div>
+
+    <script>
+        const planData = ${JSON.stringify(planData)};
+        const planId = "plan_" + btoa(unescape(encodeURIComponent("${fileName}")));
+
+        // وظيفة بناء الجدول من البيانات المدمجة
+        function renderViewer() {
+            const container = document.getElementById('days-container');
+            planData.days.forEach((day, dIdx) => {
+                const dayBlock = document.createElement('div');
+                dayBlock.className = 'day-block';
+                dayBlock.innerHTML = \`<div class="day-header"><h2>\${day.title}</h2></div><div class="meals-container"></div>\`;
+                const mealsContainer = dayBlock.querySelector('.meals-container');
+                
+                day.meals.forEach((meal, mIdx) => {
+                    const mealBlock = document.createElement('div');
+                    mealBlock.className = 'meal-block';
+                    let detHtml = meal.details.map((d, i) => {
+                        // استرجاع القيمة من الذاكرة المحلية إذا كانت موجودة (للمتدرب)
+                        const savedVal = localStorage.getItem(\`\${planId}_\${dIdx}_\${mIdx}_\${i}\`) || d.value;
+                        const isEditable = d.label.includes('الوزن') || d.label.includes('العدادات');
+                        return \`<span><strong>\${d.label}</strong> <span class="val" \${isEditable ? 'contenteditable="true"' : ''} data-key="\${planId}_\${dIdx}_\${mIdx}_\${i}">\${savedVal}</span> \${d.unit}</span>\`;
+                    }).join('');
+                    
+                    mealBlock.innerHTML = \`<h3>\${meal.title}</h3><div class="meal-content">\${meal.content}</div><div class="meal-details">\${detHtml}</div>\`;
+                    mealsContainer.appendChild(mealBlock);
+                });
+                container.appendChild(dayBlock);
+            });
+
+            // حفظ التغييرات التي يقوم بها المتدرب (مثل الوزن) تلقائياً
+            document.addEventListener('input', (e) => {
+                if (e.target.classList.contains('val')) {
+                    localStorage.setItem(e.target.dataset.key, e.target.textContent);
+                }
+            });
+        }
+        renderViewer();
+    </script>
+</body>
+</html>`;
+
+        const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = `${fileName.trim()}.json`;
+        link.download = `${fileName.trim()}.html`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        alert("تم تصدير نسخة المتدرب بنجاح بصيغة HTML.");
     };
 
     /**
@@ -550,14 +632,18 @@ document.addEventListener('DOMContentLoaded', () => {
      * تحميل البيانات تلقائياً.
      */
     const loadFromLocalStorage = () => {
-        const saved = localStorage.getItem('muscle_factory_autosave');
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentType = urlParams.get('type') || planTypeSelector.value;
+        
+        // البحث عن البيانات الخاصة بهذا النوع تحديداً (diet أو workout)
+        const storageKey = `muscle_factory_autosave_${currentType}`;
+        const saved = localStorage.getItem(storageKey);
+
         if (saved) {
             renderPlan(JSON.parse(saved));
         } else {
-            // إذا كان في وضع العرض ولا توجد بيانات، نفتح نافذة رفع الملف إجبارياً
-            const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('mode') === 'view') {
-                alert("برجاء اختيار ملف الخطة (قاعدة البيانات) المرسل إليك لعرض النظام.");
+                alert("مرحباً بك! يرجى اختيار ملف الخطة الخاص بك للمرة الأولى، وسيقوم التطبيق بحفظه تلقائياً للمرات القادمة.");
                 planFileInput.click();
             }
         }
@@ -611,7 +697,7 @@ document.addEventListener('DOMContentLoaded', () => {
         deleteAllButton.addEventListener('click', () => localStorage.removeItem('muscle_factory_autosave'));
     }
     if (saveButton) {
-        saveButton.addEventListener('click', savePlanAsData);
+        saveButton.addEventListener('click', savePlanAsHtml);
     }
     if (loadPlanButton) {
         loadPlanButton.addEventListener('click', () => planFileInput.click()); // فتح نافذة اختيار الملف
