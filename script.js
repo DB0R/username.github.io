@@ -155,30 +155,12 @@ document.addEventListener('DOMContentLoaded', () => {
             nutritionFieldsContainer.style.display = 'block'; // إظهار حقول التغذية
         }
 
-        // تحديث كل العناصر الحالية في الصفحة
+        // تحديث أزرار الإضافة فقط في الأيام الموجودة دون المساس بالمحتوى
         document.querySelectorAll('.day-block').forEach(dayBlock => {
             const addMealBtn = dayBlock.querySelector('.add-meal-btn');
             if (addMealBtn) {
                 addMealBtn.textContent = planType === 'diet' ? '➕ إضافة وجبة' : '➕ إضافة تمرين';
             }
-
-            dayBlock.querySelectorAll('.meal-block').forEach(mealBlock => {
-                const details = mealBlock.querySelector('.meal-details');
-                let newDetailsHtml = '';
-                if (planType === 'diet') {
-                    // إعادة بناء الحقول بناءً على الاختيارات الحالية
-                    document.querySelectorAll('#nutrition-fields-checkboxes input:checked').forEach(checkbox => {
-                        const fieldKey = checkbox.dataset.field;
-                        const field = nutritionFields[fieldKey];
-                        newDetailsHtml += `<span data-field="${fieldKey}"><strong>${field.icon || ''} ${field.label}:</strong> <span contenteditable="true">0</span> ${field.unit}</span>`;
-                    });
-                } else { // workout
-                    Object.entries(workoutFields).forEach(([key, field]) => {
-                        newDetailsHtml += `<span class="workout-field"><strong>${field.icon || ''} ${field.label}:</strong> <span contenteditable="true">0</span> ${field.unit}</span>`;
-                    });
-                }
-                details.innerHTML = newDetailsHtml;
-            });
         });
     };
 
@@ -527,13 +509,13 @@ document.addEventListener('DOMContentLoaded', () => {
         let autoSaveScript = '';
         if (planType === 'workout') {
             // تفعيل التعديل لحقول الوزن والعدادات فقط (وليس المجاميع)
-            let fieldCounter = 0;
-            daysContainerClone.querySelectorAll('.meal-details .workout-field').forEach((fieldSpan) => {
-                const label = fieldSpan.querySelector('strong').textContent;
+            daysContainerClone.querySelectorAll('.meal-details .workout-field').forEach((fieldSpan, index) => {
+                const label = fieldSpan.querySelector('strong')?.textContent || '';
                 if (label.includes('الوزن') || label.includes('العدادات')) {
                     const editableSpan = fieldSpan.querySelector('span');
+                    if (!editableSpan) return;
                     editableSpan.setAttribute('contenteditable', 'true');
-                    editableSpan.setAttribute('data-id', `field-${fieldCounter++}`); // إضافة معرف فريد
+                    editableSpan.setAttribute('data-id', `field-${index}`); // معرف ثابت يعتمد على الترتيب
                 }
             });
             dietPlanHtml = daysContainerClone.innerHTML; // <<-- الإصلاح: إعادة تعيين المحتوى بعد التعديل
@@ -860,9 +842,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 const styles = doc.querySelector('style');
 
                 if (container && styles) {
+                    // 1. نقل التنسيقات والسمات (الألوان، الوضع الليلي، شكل الموبايل)
+                    document.body.className = doc.body.className;
                     document.head.appendChild(styles.cloneNode(true));
                     pwaContentArea.innerHTML = container.outerHTML;
                     
+                    // 2. استعادة الأوزان والعدات المحفوظة
+                    pwaContentArea.querySelectorAll('[data-id]').forEach(field => {
+                        const savedValue = localStorage.getItem('pwa-val-' + field.dataset.id);
+                        if (savedValue) field.textContent = savedValue;
+                    });
+
+                    // 3. تفعيل الحفظ التلقائي عند الكتابة
+                    pwaContentArea.addEventListener('input', (e) => {
+                        if (e.target.hasAttribute('data-id')) {
+                            localStorage.setItem('pwa-val-' + e.target.dataset.id, e.target.textContent);
+                        }
+                    }, { passive: true });
+
                     // إضافة زر إعادة التعيين في الأسفل
                     const resetBtn = document.createElement('button');
                     resetBtn.id = 'reset-plan-btn';
@@ -879,6 +876,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         
                         if (e.target.id === 'reset-plan-btn') {
                             if (confirm('هل تريد حذف الخطة الحالية واختيار ملف آخر؟')) {
+                                // مسح البيانات المحفوظة للأوزان عند تغيير الخطة (اختياري)
+                                Object.keys(localStorage).forEach(key => {
+                                    if (key.startsWith('pwa-val-')) localStorage.removeItem(key);
+                                });
                                 localStorage.removeItem('km_saved_pwa_file');
                                 location.reload();
                             }
