@@ -811,6 +811,43 @@ document.addEventListener('DOMContentLoaded', () => {
     const pwaInput = document.getElementById('pwa-file-input');
     const pwaContentArea = document.getElementById('pwa-content-area');
     const initialSetup = document.getElementById('initial-setup');
+    const dbManagement = document.getElementById('db-management');
+
+    // وظيفة تصدير قاعدة البيانات (JSON)
+    const exportDatabase = () => {
+        const data = {};
+        Object.keys(localStorage).forEach(key => {
+            if (key.startsWith('pwa-val-')) {
+                data[key] = localStorage.getItem(key);
+            }
+        });
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `plan_database_${new Date().toLocaleDateString('ar-EG')}.json`;
+        a.click();
+    };
+
+    // وظيفة استيراد قاعدة البيانات (JSON)
+    const importDatabase = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                Object.keys(data).forEach(key => {
+                    localStorage.setItem(key, data[key]);
+                });
+                alert('تم استعادة الأوزان والعدات بنجاح! سيتم تحديث الصفحة الآن.');
+                location.reload();
+            } catch (err) {
+                alert('خطأ في قراءة ملف قاعدة البيانات.');
+            }
+        };
+        reader.readAsText(file);
+    };
 
     // --- زر دخول الإدارة من داخل التطبيق ---
     const adminBtn = document.getElementById('admin-login-btn');
@@ -868,6 +905,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     initialSetup.style.display = 'none';
                     pwaContentArea.style.display = 'block';
+                    if (dbManagement) dbManagement.classList.remove('hidden');
                     
                     // تفعيل ميزة الطي والفتح داخل التطبيق
                     pwaContentArea.addEventListener('click', (e) => {
@@ -925,5 +963,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.open('https://wa.me/201099156738?text=' + encodeURIComponent('أهلاً كابتن، لدي استفسار بخصوص الخطة.'), '_blank');
             }
         });
+
+        // ربط أزرار قاعدة البيانات
+        const exportBtn = document.getElementById('export-db-btn');
+        const importBtn = document.getElementById('import-db-btn');
+        const dbFileInput = document.getElementById('db-file-input');
+
+        if (exportBtn) exportBtn.addEventListener('click', exportDatabase);
+        if (importBtn) importBtn.addEventListener('click', () => dbFileInput.click());
+        if (dbFileInput) dbFileInput.addEventListener('change', importDatabase);
     }
 });

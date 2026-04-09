@@ -36,6 +36,11 @@
         /* زر إعادة التعيين يظهر في أسفل الخطة */
         #reset-plan-btn { margin: 40px auto; display: block; background-color: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-family: 'Cairo'; }
         
+        .db-controls { margin: 20px auto; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        .db-btn { padding: 8px 15px; border-radius: 6px; border: none; cursor: pointer; font-family: 'Cairo'; font-weight: bold; font-size: 0.9em; }
+        .export-btn { background-color: #27ae60; color: white; }
+        .import-btn { background-color: #8e44ad; color: white; }
+        
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
@@ -59,6 +64,15 @@
 
         <!-- منطقة عرض الخطة -->
         <div id="pwa-content-area"></div>
+
+        <!-- أزرار قاعدة البيانات -->
+        <div id="db-management" class="hidden">
+            <div class="db-controls">
+                <button id="export-db-btn" class="db-btn export-btn">📥 حفظ نسخة من الأوزان (DB)</button>
+                <button id="import-db-btn" class="db-btn import-btn">📤 استعادة الأوزان من ملف</button>
+                <input type="file" id="db-file-input" accept=".json" style="display: none;">
+            </div>
+        </div>
     </div>
 
     <script src="script.js"></script>
