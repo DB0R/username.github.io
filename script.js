@@ -1,4 +1,19 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // --- نظام حماية الدخول للمحرر (Admin Access) ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const userParam = urlParams.get('user');
+    const adminKey = '12345';
+    const editorContainer = document.getElementById('diet-plan-container');
+
+    // إذا كان المستخدم يحاول فتح المحرر (index.html)
+    if (editorContainer) {
+        if (userParam !== adminKey) {
+            // تحويل أي شخص لا يملك الرابط السري إلى صفحة التطبيق
+            window.location.href = 'app.html';
+            return; // إيقاف تشغيل باقي الكود
+        }
+    }
+
     const addDayButton = document.getElementById('add-day-button');
     const deleteAllButton = document.getElementById('delete-all-button');
     const saveButton = document.getElementById('save-button');
@@ -11,12 +26,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // قائمة الحقول الغذائية المتاحة
     const nutritionFields = {
-        calories: { label: 'سعرات', unit: '' },
-        protein: { label: 'بروتين', unit: 'جرام' },
-        carbs: { label: 'كارب', unit: 'جرام' },
-        fats: { label: 'دهون', unit: 'جرام' },
-        fiber: { label: 'ألياف', unit: 'جرام' },
-        sugar: { label: 'سكريات', unit: 'جرام' }
+        calories: { label: 'سعرات', unit: '', icon: '🔥' },
+        protein: { label: 'بروتين', unit: 'جرام', icon: '💪' },
+        carbs: { label: 'كارب', unit: 'جرام', icon: '⚡' },
+        fats: { label: 'دهون', unit: 'جرام', icon: '🧈' },
+        fiber: { label: 'ألياف', unit: 'جرام', icon: '🌾' },
+        sugar: { label: 'سكريات', unit: 'جرام', icon: '🍯' }
+    };
+
+    const workoutFields = {
+        weight: { label: 'الوزن', unit: 'كجم', icon: '⚖️' },
+        reps: { label: 'العدادات', unit: '', icon: '🔢' },
+        sets: { label: 'المجاميع', unit: '', icon: '📊' }
     };
 
 
@@ -36,14 +57,12 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('#nutrition-fields-checkboxes input:checked').forEach(checkbox => {
                 const fieldKey = checkbox.dataset.field;
                 const field = nutritionFields[fieldKey];
-                detailsHtml += `<span data-field="${fieldKey}"><strong>${field.label}:</strong> <span contenteditable="true">0</span> ${field.unit}</span>`;
+                detailsHtml += `<span data-field="${fieldKey}"><strong>${field.icon || ''} ${field.label}:</strong> <span contenteditable="true">0</span> ${field.unit}</span>`;
             });
         } else { // workout
-            detailsHtml = `
-                <span class="workout-field"><strong>الوزن:</strong> <span contenteditable="true">0</span> كجم</span>
-                <span class="workout-field"><strong>العدادات:</strong> <span contenteditable="true">0</span></span>
-                <span class="workout-field"><strong>المجاميع:</strong> <span contenteditable="true">0</span></span>
-            `;
+            Object.entries(workoutFields).forEach(([key, field]) => {
+                detailsHtml += `<span class="workout-field"><strong>${field.icon || ''} ${field.label}:</strong> <span contenteditable="true">0</span> ${field.unit}</span>`;
+            });
         }
 
         mealBlock.innerHTML = `
@@ -61,11 +80,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const createDayBlock = () => {
         dayCounter++;
         const dayBlock = document.createElement('div');
-        const addBtnText = planTypeSelector.value === 'diet' ? '➕ إضافة وجبة' : '➕ إضافة تمرين';
+        const planType = planTypeSelector.value;
+        const addBtnText = planType === 'diet' ? '➕ إضافة وجبة' : '➕ إضافة تمرين';
+        const dayTitle = planType === 'diet' ? `اليوم ${dayCounter} - 🍎 تغذية` : `اليوم ${dayCounter} - 💪 تمارين`;
         dayBlock.className = 'day-block';
         dayBlock.innerHTML = `
             <div class="day-header">
-                <h2 contenteditable="true">اليوم ${dayCounter}</h2>
+                <h2 contenteditable="true">${dayTitle}</h2>
                 <div class="day-header-buttons">
                     <button class="add-meal-btn">${addBtnText}</button>
                     <button class="delete-day-btn" title="حذف اليوم">🗑️</button>
@@ -149,14 +170,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.querySelectorAll('#nutrition-fields-checkboxes input:checked').forEach(checkbox => {
                         const fieldKey = checkbox.dataset.field;
                         const field = nutritionFields[fieldKey];
-                        newDetailsHtml += `<span data-field="${fieldKey}"><strong>${field.label}:</strong> <span contenteditable="true">0</span> ${field.unit}</span>`;
+                        newDetailsHtml += `<span data-field="${fieldKey}"><strong>${field.icon || ''} ${field.label}:</strong> <span contenteditable="true">0</span> ${field.unit}</span>`;
                     });
                 } else { // workout
-                    newDetailsHtml = `
-                        <span class="workout-field"><strong>الوزن:</strong> <span contenteditable="true">0</span> كجم</span>
-                        <span class="workout-field"><strong>العدادات:</strong> <span contenteditable="true">0</span></span>
-                        <span class="workout-field"><strong>المجاميع:</strong> <span contenteditable="true">0</span></span>
-                    `;
+                    Object.entries(workoutFields).forEach(([key, field]) => {
+                        newDetailsHtml += `<span class="workout-field"><strong>${field.icon || ''} ${field.label}:</strong> <span contenteditable="true">0</span> ${field.unit}</span>`;
+                    });
                 }
                 details.innerHTML = newDetailsHtml;
             });
@@ -181,7 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const checkboxHtml = `
                 <label style="display: inline-flex; align-items: center; gap: 5px; font-size: 1em; cursor: pointer; padding: 5px 10px; border-radius: 5px; background-color: #f0f0f0;">
                     <input type="checkbox" data-field="${key}" ${isChecked ? 'checked' : ''}>
-                    ${field.label}
+                    ${field.icon || ''} ${field.label}
                 </label>
             `;
             container.innerHTML += checkboxHtml;
@@ -373,6 +392,23 @@ document.addEventListener('DOMContentLoaded', () => {
             .dark-theme .modern-signature .captain-name { color: #fff; text-shadow: 0 0 8px var(--accent-color); }
             .dark-theme .modern-signature .captain-title { color: #bbb; }
 
+            /* 8. التصميم العصري (ذهبي وأسود) */
+            body.modern-dark { --primary: #1a1a1a; --secondary: #2d2d2d; --accent: #d4af37; --accent-light: #e8d4a8; --text-primary: #f5f5f5; --text-secondary: #b0b0b0; --border: #404040; background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%); color: var(--text-primary); font-family: 'Poppins', 'Tajawal', sans-serif; }
+            .modern-dark .container { background-color: var(--secondary); border: 2px solid var(--accent); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+            .modern-dark .day-block { background: var(--secondary); border: 1px solid var(--border); border-left: 5px solid var(--accent); border-radius: 15px; }
+            .modern-dark .day-header { border-bottom: 2px solid var(--border); }
+            .modern-dark .day-header h2 { color: var(--text-primary); }
+            .modern-dark .day-header h2 span { color: var(--accent); }
+            .modern-dark .meal-block { background: linear-gradient(135deg, rgba(45, 45, 45, 0.8) 0%, rgba(30, 30, 30, 0.8) 100%); border: 1.5px solid var(--border); backdrop-filter: blur(10px); border-radius: 12px; }
+            .modern-dark .meal-block h3 { color: var(--accent); border-bottom: 2px solid var(--border); }
+            .modern-dark .meal-block [contenteditable="true"] { background: rgba(212, 175, 55, 0.1); border: 1px solid rgba(212, 175, 55, 0.2); }
+            .modern-dark .meal-details span { background: rgba(212, 175, 55, 0.05); border-left: 3px solid var(--accent); color: var(--text-secondary); margin-top: 5px; padding: 8px 12px; border-radius: 6px; }
+            .modern-dark .meal-details strong { color: var(--accent); }
+            .modern-dark .banner-header { border: 2px solid var(--accent); box-shadow: 0 20px 60px rgba(212, 175, 55, 0.15); border-radius: 20px; }
+            .modern-dark .banner-header h1 { color: var(--accent); text-shadow: 0 4px 20px rgba(0, 0, 0, 0.7); }
+            .modern-dark .captain-name { color: var(--accent); text-shadow: 0 4px 15px rgba(212, 175, 55, 0.3); }
+            .modern-dark .add-meal-btn { background: rgba(212, 175, 55, 0.2) !important; color: var(--accent) !important; border: 1px solid var(--accent) !important; }
+
             /* --- 📱 تصميم متجاوب مع الموبايل 📱 --- */
             @media (max-width: 768px) { 
                 body { padding: 10px; }
@@ -471,20 +507,20 @@ document.addEventListener('DOMContentLoaded', () => {
         let dietPlanHtml = daysContainerClone.innerHTML;
 
         // 3. جلب الصور من الروابط وتحويلها إلى Base64
-        const img1 = 'https://i.postimg.cc/mrLC1DL4/Picsart-25-11-15-02-40-50-432.jpg';
-        const img2 = 'https://i.postimg.cc/qBSSTt0g/Picsart-25-11-15-02-41-25-060.jpg';
-        const img3 = 'https://i.postimg.cc/L8MWJrJf/Picsart-25-11-15-02-42-03-732.jpg';
+        const img1 = 'https://i.postimg.cc/mZcbZ6CW/541206584-18110849590533672-4486967375139027511-n.jpg'; // صورة البانر (الغلاف)
+        const img2 = 'https://i.postimg.cc/9X4WXNTs/541582284-18110849581533672-3209587570225973115-n.jpg'; // صورة الكابتن 1
+        const img3 = 'https://i.postimg.cc/gcwYcB8p/542465511-18110849599533672-9121194465655432988-n.jpg'; // صورة الكابتن 2
 
         // 4. إنشاء قسم التوقيع بناءً على الاختيار
         let signatureHtml = '';
         const whatsappButton = `<a href="#" id="whatsapp-share-btn" class="whatsapp-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width="20" height="20"><path fill="currentColor" d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.8 0-65.7-10.8-94.2-30.6l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.8-16.2-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/></svg><span>تواصل عبر واتساب</span></a>`;
 
         if (signatureLayout === 'professional') {
-            signatureHtml = `<footer class="signature-footer"><div class="signature-images"><img src="${img2}" alt="صورة للكابتن محمد محي 2"><img src="${img3}" alt="صورة للكابتن محمد محي 3"></div><div class="signature-content"><p class="prepared-by">تم إعداد هذا البرنامج بواسطة</p><h3 class="captain-name">K/M mohy</h3><p class="captain-title">خبير التغذية واللياقة البدنية - مصنع العضلات</p>${whatsappButton}</div></footer>`;
+            signatureHtml = `<footer class="signature-footer"><div class="signature-images"><img src="${img2}" alt="صورة للكابتن Botta 2"><img src="${img3}" alt="صورة للكابتن Botta 3"></div><div class="signature-content"><p class="prepared-by">تم إعداد هذا البرنامج بواسطة</p><h3 class="captain-name">Botta</h3><p class="captain-title">خبير التغذية واللياقة البدنية Botta</p>${whatsappButton}</div></footer>`;
         } else if (signatureLayout === 'classic') {
-            signatureHtml = `<div class="classic-signature"><div class="personal-details"><h2>K/M mohy</h2><h3>مصنع العضلات - Muscle Factory</h3></div><div class="image-gallery" style="grid-template-columns: repeat(2, 1fr);"><div class="gallery-item"><img src="${img2}" alt="صورة 2"></div><div class="gallery-item"><img src="${img3}" alt="صورة 3"></div></div><div class="share-section"><p>للاستفسار أو تعديل الخطة، تواصل معي مباشرة!</p>${whatsappButton}</div></div>`;
+            signatureHtml = `<div class="classic-signature"><div class="personal-details"><h2>Botta</h2><h3>خبير التغذية واللياقة البدنية Botta</h3></div><div class="image-gallery" style="grid-template-columns: repeat(2, 1fr);"><div class="gallery-item"><img src="${img2}" alt="صورة 2"></div><div class="gallery-item"><img src="${img3}" alt="صورة 3"></div></div><div class="share-section"><p>للاستفسار أو تعديل الخطة، تواصل معي مباشرة!</p>${whatsappButton}</div></div>`;
         } else if (signatureLayout === 'modern') {
-            signatureHtml = `<footer class="modern-signature"><div class="modern-images" style="--img-count: 2;"><img src="${img2}" alt="صورة للكابتن محمد محي 2"><img src="${img3}" alt="صورة للكابتن محمد محي 3"></div><div class="modern-content"><h3 class="captain-name">K/M mohy</h3><p class="captain-title">خبير التغذية واللياقة البدنية - مصنع العضلات</p>${whatsappButton}</div></footer>`;
+            signatureHtml = `<footer class="modern-signature"><div class="modern-images" style="--img-count: 2;"><img src="${img2}" alt="صورة للكابتن Botta 2"><img src="${img3}" alt="صورة للكابتن Botta 3"></div><div class="modern-content"><h3 class="captain-name">Botta</h3><p class="captain-title">خبير التغذية واللياقة البدنية Botta</p>${whatsappButton}</div></footer>`;
         }
 
         // 5. إضافة كود الحفظ التلقائي وتفعيل التعديل فقط لخطة التدريب
@@ -541,7 +577,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <title>${fileName.trim()}</title>
                 <link rel="preconnect" href="https://fonts.googleapis.com">
                 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-                <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+                <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Tajawal:wght@400;700&family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
                 <style>
                     ${getThemeStyles()}
                 </style>
@@ -570,7 +606,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (whatsappBtn) {
                             whatsappBtn.addEventListener('click', function(e) {
                                 e.preventDefault();
-                                const phoneNumber = "201029831669";
+                                const phoneNumber = "201099156738";
                                 const message = "أهلاً كابتن محمد، لدي استفسار بخصوص الخطة.";
                                 const encodedMessage = encodeURIComponent(message);
                                 window.open('https://wa.me/' + phoneNumber + '?text=' + encodedMessage, '_blank');
@@ -794,6 +830,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const pwaContentArea = document.getElementById('pwa-content-area');
     const initialSetup = document.getElementById('initial-setup');
 
+    // --- زر دخول الإدارة من داخل التطبيق ---
+    const adminBtn = document.getElementById('admin-login-btn');
+    if (adminBtn) {
+        adminBtn.addEventListener('click', () => {
+            const pass = prompt('الرجاء إدخال كلمة المرور لدخول لوحة الإدارة:');
+            if (pass === '12345') {
+                window.location.href = 'index.html?user=12345';
+            } else if (pass !== null) {
+                alert('كلمة مرور خاطئة!');
+            }
+        });
+    }
+
+
     if (pwaAddBtn) {
         // وظيفة فك تشفير وعرض الخطة
         const renderSavedPlan = (fileContent) => {
@@ -871,7 +921,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // تفعيل أزرار الواتساب داخل التطبيق إذا وجدت
         pwaContentArea.addEventListener('click', (e) => {
             if (e.target.closest('.whatsapp-button')) {
-                window.open('https://wa.me/201029831669?text=' + encodeURIComponent('أهلاً كابتن محمد، لدي استفسار بخصوص الخطة.'), '_blank');
+                window.open('https://wa.me/201099156738?text=' + encodeURIComponent('أهلاً كابتن، لدي استفسار بخصوص الخطة.'), '_blank');
             }
         });
     }
